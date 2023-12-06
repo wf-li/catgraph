@@ -70,7 +70,7 @@ class CatmaidHelper(CatmaidClient):
     def node_overview(self,skid):
         """ Get node overview for skeleton
         """
-        url = str(self.pid) + "/skeletons/" + str(skid) + "/node-overview"
+        url = "/" + str(self.pid) + "/skeletons/" + str(skid) + "/node-overview"
         return self.fetch(
             url = url,
             method = "get",
@@ -173,6 +173,8 @@ def get_children(tree_info,node):
 
 
 if __name__ == "__main__":
+
+    # test code
     base_url = "https://zhencatmaid.com"
 
     f = open("C:/Users/liwil/Desktop/work/meizhenlab/apitoken.txt", "r")
