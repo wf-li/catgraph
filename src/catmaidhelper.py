@@ -163,14 +163,14 @@ class CatmaidHelper(CatmaidClient):
             if link['confidence'] < confidence_gate:
                 continue
             if link['relation_name'] == 'presynaptic_to':
-                pre = skeleton_names[str(link['skeleton_id'])]
+                pre = self.skeleton_names[str(link['skeleton_id'])]
                 if connector_exclude == "pre":
-                    if pre in skeleton_node_list.keys():
+                    if pre in bounded_nodes.keys():
                         pre_in = link['partner_id'] in bounded_nodes[pre]
                     else:
                         continue
             elif link['relation_name'] == 'postsynaptic_to':
-                post_list.append(skeleton_names[str(link['skeleton_id'])])
+                post_list.append(self.skeleton_names[str(link['skeleton_id'])])
         
         return [[pre,post] for post in post_list]
     
