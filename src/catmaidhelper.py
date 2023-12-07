@@ -34,11 +34,12 @@ class CatmaidHelper(CatmaidClient):
         list
             List of skeleton IDs
         """
-        return self.fetch(
+        self.skeletons = self.fetch(
             url = "/" + str(self.pid) + "/skeletons/",
             method = "get",
             data = {"project_id": self.pid}
             ).json()
+        return self.skeletons
     
     def load_skeleton_names(self,skeletons):
         """ Make dictionary associating skeleton ID and skeleton name
@@ -61,11 +62,12 @@ class CatmaidHelper(CatmaidClient):
         for i in range(len(skeletons)):
             data["skeleton_ids['" + str(i) + "']"] = skeletons[i]
 
-        return self.fetch(
+        self.skeleton_names = self.fetch(
             url = "/" + str(self.pid) + "/skeleton/annotationlist",
             method = "post",
             data = data
             ).json()['neuronnames']
+        return self.skeleton_names
     
     def node_overview(self,skid):
         """ Get node overview for skeleton
@@ -119,6 +121,58 @@ class CatmaidHelper(CatmaidClient):
             return {'skid': skid, 'nodelist': nodelist}
         else:
             return
+
+    def get_edges(self,
+                  cid,
+                  confidence_gate = 5,
+                  **kwargs):
+        """ Get edges for a connector
+
+        kwargs
+        exclude_connectors: str
+            can be 'pre' or 'neither', may add more in future
+        bounded_nodes: dict
+            nodes to include where key: skeleton and value: nodes
+        """
+        exc = 0
+        bound = 0
+
+        if "exclude_connectors" in kwargs:
+            exc = 1
+            connector_exclude = kwargs["exclude_connectors"]
+        if "bounded_nodes" in kwargs:
+            bound = 1
+            bounded_nodes = kwargs["bounded_nodes"]
+
+        if exc^bound:
+            raise KeyError("Must include values for both exclude_connectors"
+                           " and bounded_nodes")
+        
+        connector_info = self.fetch(
+              url = "/" + str(self.pid) + "/connectors/" + str(cid),
+              method = "get",
+              data = {"project_id": self.pid,
+                      "connector_id": cid}
+              ).json()
+        
+        post_list = []
+        pre = ''
+                      
+        pre_in = False
+        for link in connector_info['partners']:
+            if link['confidence'] < confidence_gate:
+                continue
+            if link['relation_name'] == 'presynaptic_to':
+                pre = skeleton_names[str(link['skeleton_id'])]
+                if bound:
+                    if pre in skeleton_node_list.keys():
+                        pre_in = link['partner_id'] in bounded_nodes[pre]
+                    else:
+                        continue
+            elif link['relation_name'] == 'postsynaptic_to':
+                post_list.append(skeleton_names[str(link['skeleton_id'])])
+        
+        return [[pre,post] for post in post_list]
     
 def compile_tag_list(tags,tag_info):
     """ return list of nodes with tag
