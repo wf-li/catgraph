@@ -130,7 +130,7 @@ class CatmaidHelper(CatmaidClient):
 
         kwargs
         exclude_connectors: str
-            can be 'pre' or 'neither', may add more in future
+            can only be 'pre', may add more in future
         bounded_nodes: dict
             nodes to include where key: skeleton and value: nodes
         """
@@ -164,7 +164,7 @@ class CatmaidHelper(CatmaidClient):
                 continue
             if link['relation_name'] == 'presynaptic_to':
                 pre = skeleton_names[str(link['skeleton_id'])]
-                if bound:
+                if connector_exclude == "pre":
                     if pre in skeleton_node_list.keys():
                         pre_in = link['partner_id'] in bounded_nodes[pre]
                     else:
