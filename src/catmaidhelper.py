@@ -94,7 +94,7 @@ class CatmaidHelper(CatmaidClient):
         skeleton_info = self.node_overview(skid)
 
         if 'end_tags' in kwargs:
-            end_tags = kwargs['nerve_ring_starts']
+            end_tags = kwargs['end_tags']
             end_nodes = compile_tag_list(end_tags, skeleton_info[2])
 
         start_nodes = compile_tag_list(start_tags,skeleton_info[2])
@@ -120,7 +120,7 @@ class CatmaidHelper(CatmaidClient):
         else:
             return
     
-def compile_tag_list(tag,tag_info):
+def compile_tag_list(tags,tag_info):
     """ return list of nodes with tag
 
     Parameters
@@ -135,15 +135,19 @@ def compile_tag_list(tag,tag_info):
     List
         List of nodes associated with tag
     """
+    if type(tags) == str:
+        tags = [tags]
+    
     nodes = []
-    tag_indices = [(i, skeleton.index(tag))
-                     for i, skeleton in enumerate(tag_info)
-                     if tag in skeleton]
-    if not tag_indices:
-        pass
-    else:
-        for i in tag_indices:
-            nodes.append(tag_info[i[0]][0])
+    for tag in tags:
+        tag_indices = [(i, skeleton.index(tag))
+                         for i, skeleton in enumerate(tag_info)
+                         if tag in skeleton]
+        if not tag_indices:
+            pass
+        else:
+            for i in tag_indices:
+                nodes.append(tag_info[i[0]][0])
     return nodes
 
 def get_children(tree_info,node):
