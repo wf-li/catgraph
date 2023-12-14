@@ -125,29 +125,33 @@ class CatmaidHelper(CatmaidClient):
     def get_edges(self,
                   cid,
                   confidence_gate = 5,
-                  **kwargs):
+                  exclude_connectors = None,
+                  bounded_nodes = None):
         """ Get edges for a connector
 
-        kwargs
+        cid: str
+            connector id
+        confidence_gate:
+
         exclude_connectors: str
             can only be 'pre', may add more in future
-        bounded_nodes: dict
+        bounded_nodes: dict or list
             nodes to include where key: skeleton and value: nodes
         """
-        exc = 0
-        bound = 0
+        if not bounded_nodes:
+            bounded_nodes = {}
+        if not exclude_connectors:
+            exclude_connectors = 'none'
 
-        if "exclude_connectors" in kwargs:
-            exc = 1
-            connector_exclude = kwargs["exclude_connectors"]
-        if "bounded_nodes" in kwargs:
-            bound = 1
-            bounded_nodes = kwargs["bounded_nodes"]
+        conditions = {
+            'pre': False,
+            'any': False,
+            'none': True
+        }
 
-        if exc^bound:
-            raise KeyError("Must include values for both exclude_connectors"
-                           " and bounded_nodes")
-        
+        if exclude_connectors not in conditions.keys():
+            raise ValueError("Not a valid condition for exclude connectors")
+
         connector_info = self.fetch(
               url = "/" + str(self.pid) + "/connectors/" + str(cid),
               method = "get",
@@ -157,22 +161,32 @@ class CatmaidHelper(CatmaidClient):
         
         post_list = []
         pre = ''
-                      
-        pre_in = False
+
         for link in connector_info['partners']:
+            n = self.skeleton_names[str(link['skeleton_id'])]
             if link['confidence'] < confidence_gate:
                 continue
             if link['relation_name'] == 'presynaptic_to':
-                pre = self.skeleton_names[str(link['skeleton_id'])]
-                if connector_exclude == "pre":
-                    if pre in bounded_nodes.keys():
-                        pre_in = link['partner_id'] in bounded_nodes[pre]
-                    else:
-                        continue
+                pre = n
+                if not conditions[exclude_connectors]:
+                    if n in bounded_nodes.keys():
+                        if link['partner_id'] in bounded_nodes[n]:
+                            conditions['pre'] = True
+                            conditions['any'] = True
             elif link['relation_name'] == 'postsynaptic_to':
-                post_list.append(self.skeleton_names[str(link['skeleton_id'])])
-        
-        return [[pre,post] for post in post_list]
+                if not conditions[exclude_connectors]:
+                    if n in bounded_nodes.keys():
+                        if link['partner_id'] in bounded_nodes[n]:
+                            conditions['any'] = True                    
+                post_list.append(n)
+
+        if not pre:
+            return
+
+        if conditions[exclude_connectors]:
+            return [[pre,post] for post in post_list]
+        else:
+            return
     
 def compile_tag_list(tags,tag_info):
     """ return list of nodes with tag
